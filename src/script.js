@@ -11,6 +11,8 @@
 // にょきって伸びるやつやろうと思ったらcolliderのupdate, hもwも・・って話。うん。
 // 背景の地面の部分だけオブジェクトの描画後にrectでやるようにすればいい。あとはyをflowでいじるだけ。
 
+// 鳥の軌道、ウェーブさせても面白そうね
+
 let all;
 let hueSet = [];
 let keyFlag;
@@ -28,6 +30,9 @@ function preload(){
   imgSet.push(loadImage('./assets/right_0.png'));
   imgSet.push(loadImage('./assets/right_1.png'));
   imgSet.push(loadImage('./assets/cactus_0.png'));
+  imgSet.push(loadImage('./assets/cactus_1.png'));
+  imgSet.push(loadImage('./assets/cactus_2.png'));
+  imgSet.push(loadImage('./assets/bird_0.png'));
 }
 
 function setup(){
@@ -226,11 +231,16 @@ class entity extends actor{
 // その30のセットだけをいろいろ確率とかでいじるようにする。つまりactorである必要はどこにもなくて、単に・・
 // 単に順繰りに敵を出してあとはintervalで待ってとかそういう感じ。
 // モードチェンジはメソッドで行う感じで。
+
+// やっぱ一度に複数の敵出したいなー・・連続して、とか。あと120長すぎるから60スタートで最後0にしたい。
+// いいやそれで。
+// スペースキー押してる時間の長さでジャンプの高さが変わるとか。チョン押しで低いジャンプ、長押しで高いジャンプ（2種類）
+// チョン押し連続でないとクリアできないのとかあったら面白そう。
 class enemyGenerator{
   constructor(){
     this.level = 1;
     this.pattern = [];
-    this.interval = 120;
+    this.interval = 60;
     this.count = 0; // intervalだけ進んだらindex増やして次の敵を出現させる、index増やしたときアレならlevel up.
     this._enemy = createEnemy(0);
     this.index = 0; // indexがenemySet.lengthになったらパターンチェンジ発動。
@@ -278,14 +288,14 @@ class enemyGenerator{
   levelUp(){
     this.level = min(7, this.level + 1);
     this.pattern = this.createPattern();
-    this.interval = max(this.interval - 10, 60)
+    this.interval = max(this.interval - 10, 0)
     this.index = 0;
   }
   createPattern(){
     // 配列を返す。サボテンや鳥の集合体。30個からなる。level:1~7で7がMAXでその場合は同じパターンの使いまわし。
     // というかlevelが7までしかないので必然的に同じ関数が呼び出される感じ。
     if(this.level === 1){
-      return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+      return [0, 1, 2, 3, 3, 3, 0, 1, 2, 0];
     }
   }
   render(){
@@ -321,9 +331,21 @@ class enemy extends actor{
 // createEnemyでkindにより場合分けしてflow作ってセットしてwとかhも決める、xとyの初期値も決める。イメージも。
 function createEnemy(kind){
   if(kind === 0){
-    // サボテン0: ただ直進してくるだけ。
+    // サボテン0: ただ直進してくるだけ。高さ40.
     let f = new run(4);
     return new enemy(kind + 2, width, GROUND, 30, 40, f);
+  }else if(kind === 1){
+    // サボテン1: 高さ80.
+    let f = new run(4);
+    return new enemy(kind + 2, width, GROUND, 30, 80, f);
+  }else if(kind === 2){
+    // サボテン2: 高さ120.
+    let f = new run(4);
+    return new enemy(kind + 2, width, GROUND, 30, 120, f);
+  }else if(kind === 3){
+    // 鳥0: 高さは0, 60のランダム
+    let f = new run(6);
+    return new enemy(kind + 2, width, GROUND - Math.floor(random(2)) * 60, 40, 40, f);
   }
 }
 
@@ -333,6 +355,8 @@ function createEnemy(kind){
 
 // 描画は例のキツネ、アニメーション2パターンくるくるで。
 // ごめんなさいジャンプするのでcollider変化します（当たり前）
+
+// 押してる間じゅう加速度が上方向、途中で消える。下方向は一定で・・理屈で組まないのもありかもね。
 class player{
   constructor(){
     // アニメーションの登録
